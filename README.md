@@ -46,6 +46,11 @@ data AppEnv = AppEnv { name :: String, ver :: Int } deriving (Generic, Show)
 Left "Could not parse value of type 'Int' for the field named 'ver' from environment variable 'APP_VER=1.0'"
 ```
 
+# Idea
+This project is based on an idea posted here: https://github.com/patrickt/haskell-project-ideas.
+
+You can check it out for other project ideas.
+
 # Documentation
 For complete docs, visit https://hackage.haskell.org/package/generic-env.
 
