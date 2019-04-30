@@ -1,0 +1,24 @@
+name:                generic-env
+version:             0.1.0.0
+github:              "yigitozkavci/generic-env"
+license:             MIT
+author:              "Yigit Ozkavci"
+maintainer:          "yigitozkavci8@gmail.com"
+copyright:           "2019 Yigit Ozkavci"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+description:         Please see the README on GitHub at <https://github.com/yigitozkavci/generic-env#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+ghc-options:
+  -Wall
+library:
+  source-dirs: src
+  dependencies:
+    - containers
+    - text
