@@ -5,6 +5,8 @@ license:             MIT
 author:              "Yigit Ozkavci"
 maintainer:          "yigitozkavci8@gmail.com"
 copyright:           "2019 Yigit Ozkavci"
+category:            Development
+synopsis:            Generic Environment Generator
 
 extra-source-files:
 - README.md

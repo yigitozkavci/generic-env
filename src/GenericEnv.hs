@@ -28,8 +28,10 @@ import Text.Read (readMaybe)
 import Data.Typeable (Typeable, typeRep)
 import Control.Applicative ((<|>), liftA2)
 
-type WrongTypeExpectationErr = 'Text "Wrong type expectation for environment. You should expect a product type with record syntax."
-type NonRecordSyntaxErr = 'Text "Only record-syntaxed product types can represent environments (we need the field names)"
+type WrongTypeExpectationErr =
+  'Text "Wrong type expectation for environment. You should expect a product type with record syntax."
+type NonRecordSyntaxErr =
+  'Text "Only record-syntaxed product types can represent environments (we need the field names)"
 
 type family ValidField (rep :: Type -> Type) :: Constraint where
   ValidField (M1 s ('MetaSel ('Just field_name) su ss ds) (K1 k field_val)) =
@@ -60,18 +62,18 @@ defaultEnvOptions =
     , envKeyPrefix = ""
     }
 
-fromEnv :: forall e. (Generic e, Gen (Rep e)) => EnvOptions -> IO (Either String e)
+fromEnv :: forall e. (Generic e, Envable (Rep e)) => EnvOptions -> IO (Either String e)
 fromEnv opts = do
   env_map <- M.fromList <$> getEnvironment
   pure $ to <$> gen opts env_map
 
-class Gen f where
+class Envable f where
   gen :: EnvOptions -> M.Map String String -> Either String (f a)
 
-instance (Gen1 v, ValidRep (M1 d m1 (M1 c m2 v))) => Gen (M1 d m1 (M1 c m2 v)) where
-  gen xs = fmap (fmap (M1 . M1)) $ gen1 xs
+instance (EnvProduct v, ValidRep (M1 d m1 (M1 c m2 v))) => Envable (M1 d m1 (M1 c m2 v)) where
+  gen = fmap (fmap (M1 . M1)) . gen1
 
-class Gen1 f where
+class EnvProduct f where
   gen1 :: EnvOptions -> M.Map String String -> Either String (f a)
 
 -- | Tries to read any readable type and also strings.
@@ -94,7 +96,7 @@ mkField proxy (EnvOptions { modifyFieldNames, envKeyPrefix }) env_map =
   let key = envKeyPrefix <> toUpper (modifyFieldNames field_name) in
   case M.lookup key env_map of
     Just envVal ->
-      case readAny envVal :: Maybe field_val of
+      case readAny envVal of
         Nothing ->
           Left $ "Could not parse value of type "
               <> "'" <> show (typeRep (Proxy @field_val)) <> "'"
@@ -113,16 +115,16 @@ instance (Show field_val
          , Typeable field_val
          , Read field_val
          , KnownSymbol field_name
-         ) => Gen1 (M1 s ('MetaSel ('Just field_name) su ss ds) (K1 k field_val)) where
+         ) => EnvProduct (M1 s ('MetaSel ('Just field_name) su ss ds) (K1 k field_val)) where
   gen1 = mkField (Proxy @field_name)
 
 -- | A single step for product type field recursioni
 instance (Show field_val
          , Typeable field_val
          , Read field_val
-         , Gen1 b
+         , EnvProduct b
          , KnownSymbol field_name
-         ) => Gen1 (M1 s ('MetaSel ('Just field_name) su ss ds) (K1 k field_val) :*: b) where
+         ) => EnvProduct (M1 s ('MetaSel ('Just field_name) su ss ds) (K1 k field_val) :*: b) where
   gen1 opts env_map = (:*:) <$> mkField (Proxy @field_name) opts env_map
                             <*> gen1 opts env_map
 
