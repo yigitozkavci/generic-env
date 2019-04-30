@@ -47,13 +47,40 @@ type family ValidRep (rep :: Type -> Type) :: Constraint where
   ValidRep (M1 d m1 (M1 c m2 v)) = ValidField v
   ValidRep _ = TypeError WrongTypeExpectationErr
 
-withPrefix :: String -> EnvOptions
-withPrefix prefix = defaultEnvOptions { envKeyPrefix = prefix }
-
 data EnvOptions = EnvOptions
   { modifyFieldNames :: String -> String
+  -- ^ Field names of the type can be modified. For a type:
+  --
+  -- @
+  --   data MyEnv { _eName :: String, _eCount :: Int }
+  -- @
+  -- you may want to eliminate the prefixes beforehand. Then
+  -- options would be:
+  --
+  -- @
+  --   defaultOptions { modifyFieldNames = drop 2 }
+  -- @
   , envKeyPrefix :: String
+  -- ^ Prefix for the environment variable keys. If your type is
+  --
+  -- @
+  --   data MyEnv { name :: String, count :: Int }
+  -- @
+  --
+  -- you might be using environment variables like the following:
+  --
+  -- @
+  --   APP_NAME=genericenv
+  --   APP_COUNT=3
+  -- @
+  --
+  -- The prefix should be "APP_" in this case.
   }
+
+-- | This function is for generating the most common use case.
+-- Only sets the prefix over the default env options.
+withPrefix :: String -> EnvOptions
+withPrefix prefix = defaultEnvOptions { envKeyPrefix = prefix }
 
 defaultEnvOptions :: EnvOptions
 defaultEnvOptions =
@@ -62,7 +89,9 @@ defaultEnvOptions =
     , envKeyPrefix = ""
     }
 
-fromEnv :: forall e. (Generic e, Envable (Rep e)) => EnvOptions -> IO (Either String e)
+-- | Tries to produce type @env@ from the environment variables. The
+-- `Envable` restriction is for ensuring type is a record-syntaxed product type.
+fromEnv :: forall env. (Generic env, Envable (Rep env)) => EnvOptions -> IO (Either String env)
 fromEnv opts = do
   env_map <- M.fromList <$> getEnvironment
   pure $ to <$> gen opts env_map
